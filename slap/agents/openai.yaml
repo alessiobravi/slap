@@ -1,0 +1,7 @@
+interface:
+  display_name: "Slap"
+  short_description: "Open the private local AI slap toy"
+  brand_color: "#FF5A5F"
+  default_prompt: "Use $slap to open AI Slapper."
+policy:
+  allow_implicit_invocation: false

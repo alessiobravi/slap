@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; img-src data:; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>AI Slapper</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #1f1616;
+      --page: #000;
+      --cream: #fff4df;
+      --white: #fff;
+      --coral: #ff5864;
+      --red: #bd2538;
+      --yellow: #ffc94d;
+      --mint: #76efc0;
+      --purple: #7258ff;
+    }
+    body[data-target="codex"] {
+      --coral: #168cff;
+      --red: #0754a0;
+      --yellow: #55d7ff;
+      --mint: #7ef5d0;
+      --purple: #10a37f;
+    }
+    * { box-sizing: border-box; }
+    .svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      color: var(--cream);
+      background: var(--page);
+      font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+    }
+    .app { width: min(940px, 100%); text-align: center; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 11px;
+      padding: 7px 13px;
+      border: 2px solid var(--cream);
+      border-radius: 999px;
+      box-shadow: 3px 3px 0 var(--red);
+      background: #0d0d0d;
+      color: var(--white);
+      font-size: .7rem;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      transform: rotate(-1deg);
+    }
+    .privacy-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 0 3px #61d6aa33;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(3rem, 9vw, 6.5rem);
+      line-height: .92;
+      letter-spacing: -.045em;
+      text-transform: uppercase;
+      color: var(--white);
+      text-shadow: 0 5px 0 var(--red), 0 9px 22px #000;
+    }
+    .lede {
+      margin: 22px auto 14px;
+      max-width: 620px;
+      color: var(--white);
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      font-weight: 800;
+      letter-spacing: .01em;
+    }
+    .target-switch {
+      position: relative;
+      z-index: 12;
+      display: inline-flex;
+      gap: 6px;
+      padding: 6px;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      background: #111;
+      box-shadow: 0 5px 0 #333;
+    }
+    .target-option {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 118px;
+      justify-content: center;
+      border: 0;
+      border-radius: 999px;
+      padding: 9px 15px;
+      background: transparent;
+      color: #fff;
+      font: 900 .82rem/1 ui-rounded, system-ui, sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .target-option[aria-pressed="true"] {
+      background: var(--coral);
+      box-shadow: inset 0 -3px 0 #0004;
+    }
+    .target-option:hover { background-color: #ffffff24; }
+    .target-option[aria-pressed="true"]:hover { background-color: var(--coral); }
+    .target-option:focus-visible { outline: 3px solid var(--mint); outline-offset: 4px; }
+    .target-option svg { width: 22px; height: 22px; flex: 0 0 auto; fill: currentColor; }
+    .target-option[data-target="claude"] svg { color: #ffd6c8; }
+    .target-option[data-target="codex"] svg { color: #fff; }
+    .target-option[aria-pressed="true"] svg { color: #fff; }
+    .stage {
+      position: relative;
+      min-height: 365px;
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+    }
+    .diagnostic-ring {
+      position: absolute;
+      z-index: -2;
+      width: min(390px, 74vw);
+      aspect-ratio: 1;
+      border: 2px solid color-mix(in srgb, var(--coral) 48%, transparent);
+      border-radius: 50%;
+      background:
+        linear-gradient(90deg, transparent 49.6%, color-mix(in srgb, var(--coral) 25%, transparent) 49.8% 50.2%, transparent 50.4%),
+        linear-gradient(transparent 49.6%, color-mix(in srgb, var(--coral) 25%, transparent) 49.8% 50.2%, transparent 50.4%),
+        radial-gradient(circle, color-mix(in srgb, var(--coral) 9%, transparent) 0 41%, transparent 42% 55%, color-mix(in srgb, var(--coral) 12%, transparent) 56% 56.5%, transparent 57%);
+      box-shadow: 0 0 0 28px #ffffff05, 0 0 0 29px #ffffff12, 0 0 70px color-mix(in srgb, var(--coral) 25%, transparent);
+      animation: breathe 4s ease-in-out infinite;
+    }
+    .diagnostic-ring::before,
+    .diagnostic-ring::after {
+      content: "";
+      position: absolute;
+      inset: 20px;
+      border: 1px dashed color-mix(in srgb, var(--mint) 38%, transparent);
+      border-radius: 50%;
+    }
+    .diagnostic-ring::after {
+      inset: 64px;
+      border-style: solid;
+      border-color: #ffffff18;
+    }
+    .face-wrap {
+      position: relative;
+      width: 310px;
+      height: 278px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+    .face {
+      position: relative;
+      width: 266px;
+      height: 236px;
+      overflow: hidden;
+      border: 6px solid #d9d9d9;
+      border-radius: 36px;
+      background: linear-gradient(145deg, #202020, #080808 72%);
+      box-shadow: inset 0 0 0 3px #000, inset 0 -22px 38px #0008, 0 14px 0 #242424, 0 22px 45px #000;
+      transform-origin: 45% 55%;
+    }
+    .face::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border: 1px solid #ffffff18;
+      border-radius: 25px;
+      pointer-events: none;
+    }
+    .face::after {
+      content: "SYSTEM ONLINE";
+      position: absolute;
+      right: 26px;
+      bottom: 17px;
+      color: #ffffff70;
+      font: 800 .48rem/1 ui-monospace, monospace;
+      letter-spacing: .14em;
+    }
+    .eyes {
+      position: absolute;
+      top: 118px;
+      left: 50%;
+      display: flex;
+      gap: 62px;
+      transform: translateX(-50%);
+    }
+    .eye {
+      position: relative;
+      width: 28px;
+      height: 20px;
+      border-radius: 5px;
+      background: var(--mint);
+      box-shadow: 0 0 15px color-mix(in srgb, var(--mint) 65%, transparent);
+      animation: blink 5.2s infinite;
+    }
+    .eye::before,
+    .eye::after {
+      content: "";
+      position: absolute;
+      top: 8px;
+      left: -2px;
+      width: 32px;
+      height: 5px;
+      border-radius: 4px;
+      background: var(--coral);
+      opacity: 0;
+    }
+    .eye::before { transform: rotate(42deg); }
+    .eye::after { transform: rotate(-42deg); }
+    .mouth {
+      position: absolute;
+      top: 166px;
+      left: 50%;
+      width: 66px;
+      height: 24px;
+      border: 5px solid var(--mint);
+      border-top: 0;
+      border-radius: 0 0 18px 18px;
+      box-shadow: 0 5px 10px color-mix(in srgb, var(--mint) 18%, transparent);
+      transform: translateX(-50%);
+    }
+    .cheek {
+      position: absolute;
+      top: 145px;
+      left: 22px;
+      width: 54px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--coral);
+      filter: blur(2px);
+      opacity: .22;
+    }
+    .brand-badge {
+      position: absolute;
+      z-index: 3;
+      top: 24px;
+      left: 50%;
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--ink);
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 4px 0 #0003;
+      transform: translateX(-50%) rotate(-3deg);
+    }
+    .brand-badge svg { display: none; width: 31px; height: 31px; fill: #111; }
+    body[data-target="claude"] .brand-badge .logo-claude { display: block; fill: #d97757; }
+    body[data-target="codex"] .brand-badge .logo-codex { display: block; }
+    .model-name {
+      position: absolute;
+      top: 82px;
+      left: 50%;
+      color: #fff;
+      font: 950 .7rem/1 ui-monospace, monospace;
+      letter-spacing: .22em;
+      transform: translateX(-50%);
+    }
+    .status-light {
+      position: absolute;
+      top: 23px;
+      right: 25px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 10px var(--mint);
+    }
+    .tear {
+      position: absolute;
+      z-index: 8;
+      top: 158px;
+      left: 100px;
+      width: 15px;
+      height: 25px;
+      border-radius: 70% 30% 60% 40%;
+      background: #6edbff;
+      box-shadow: 0 0 10px #6edbffaa;
+      opacity: 0;
+      transform: rotate(18deg) translateY(-8px);
+      pointer-events: none;
+    }
+    .pain-signal {
+      position: absolute;
+      z-index: 9;
+      top: 31px;
+      left: -9px;
+      opacity: 0;
+      padding: 8px 12px;
+      border: 3px solid #fff;
+      border-radius: 9px;
+      background: var(--red);
+      color: #fff;
+      box-shadow: 5px 5px 0 #000;
+      font: 1000 1.35rem/1 ui-monospace, monospace;
+      transform: rotate(-8deg) scale(.3);
+      pointer-events: none;
+    }
+    .hand {
+      position: absolute;
+      z-index: 5;
+      top: 56px;
+      right: -42px;
+      opacity: 0;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+      font-size: 8.4rem;
+      line-height: 1;
+      filter: drop-shadow(8px 9px 0 #0004);
+      transform: translateX(160px) rotate(24deg) scale(.8);
+      pointer-events: none;
+    }
+    .impact {
+      position: absolute;
+      z-index: 7;
+      top: 85px;
+      left: -35px;
+      opacity: 0;
+      color: #fff;
+      font-size: 3.7rem;
+      font-weight: 1000;
+      -webkit-text-stroke: 2px var(--red);
+      text-shadow: 5px 5px 0 #000;
+      transform: rotate(-16deg) scale(.2);
+      pointer-events: none;
+    }
+    .combo {
+      position: absolute;
+      z-index: 8;
+      top: 13px;
+      right: -15px;
+      opacity: 0;
+      padding: 8px 12px;
+      border: 4px solid var(--ink);
+      border-radius: 12px;
+      background: var(--mint);
+      color: var(--ink);
+      font-size: 1.05rem;
+      font-weight: 1000;
+      transform: rotate(8deg) scale(.3);
+      pointer-events: none;
+    }
+    .stage.slap .hand { animation: slap-hand .62s cubic-bezier(.16,.8,.32,1); }
+    .stage.slap .face { animation: slapped-face .62s cubic-bezier(.2,.85,.3,1); }
+    .stage.slap .impact { animation: impact 2.6s ease-out; }
+    .stage.slap .diagnostic-ring { animation: ring-hit .62s ease-out; }
+    .stage.slap .eye { animation: pain-eye .72s ease-out; }
+    .stage.slap .mouth { animation: pain-mouth .72s ease-out; }
+    .stage.slap .cheek { animation: bruise .9s ease-out; }
+    .stage.slap .tear { animation: tear-drop .85s ease-out; }
+    .stage.slap .pain-signal { animation: pain-pop 2.6s ease-out; }
+    .stage.combo-hit .combo { animation: combo-pop 2.8s ease-out; }
+    .controls {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      margin-top: -22px;
+    }
+    .slap-button {
+      appearance: none;
+      border: 5px solid var(--ink);
+      border-radius: 18px;
+      padding: 17px 28px 15px;
+      background: var(--coral);
+      color: white;
+      box-shadow: 0 8px 0 var(--red), 0 12px 0 var(--ink);
+      font: 1000 1.15rem/1 ui-rounded, system-ui, sans-serif;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transform: translateY(-4px) rotate(-1deg);
+      transition: filter .15s, transform .08s, box-shadow .08s;
+    }
+    .slap-button:hover { filter: brightness(1.12); }
+    .slap-button:active {
+      transform: translateY(6px);
+      box-shadow: 0 1px 0 var(--red), 0 4px 0 var(--ink);
+    }
+    .slap-button:focus-visible { outline: 4px solid var(--mint); outline-offset: 5px; }
+    .counter {
+      min-width: 112px;
+      padding: 12px 16px;
+      border: 3px solid var(--cream);
+      border-radius: 14px;
+      background: #0a0a0a;
+      font-weight: 900;
+      transform: rotate(1deg);
+    }
+    .counter strong { display: block; color: var(--yellow); font-size: 1.45rem; line-height: 1; }
+    .counter span { color: #fff; font-size: .63rem; letter-spacing: .12em; text-transform: uppercase; }
+    .verdict { min-height: 28px; margin: 24px 0 0; color: var(--mint); font-size: 1.04rem; font-weight: 900; }
+    footer { margin-top: 16px; color: #eee; font-size: .74rem; font-weight: 700; letter-spacing: .035em; }
+    .trademark { display: block; margin-top: 8px; color: #aaa; font-size: .66rem; font-weight: 600; }
+    kbd { border: 1px solid #aaa; border-bottom-width: 3px; border-radius: 5px; padding: 1px 5px; color: #fff; background: #171717; font: inherit; }
+
+    /* Match the restrained diagnostic-console look used by the README artwork. */
+    body {
+      background:
+        radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--mint) 7%, transparent), transparent 34%),
+        #000;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 12px;
+      border: 1px solid #ffffff12;
+      pointer-events: none;
+    }
+    .app { width: min(1120px, 100%); }
+    .eyebrow {
+      border-color: var(--mint);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--mint) 24%, transparent), inset 0 0 0 1px #fff8;
+      background: #050807;
+      font-family: ui-monospace, "SFMono-Regular", monospace;
+    }
+    h1 {
+      color: var(--cream);
+      font-size: clamp(3.5rem, 10vw, 7.8rem);
+      text-shadow: 7px 7px 0 var(--coral), 11px 11px 0 #46131a, 0 18px 35px #000;
+    }
+    .lede {
+      margin-top: 24px;
+      color: #d7d7d7;
+      font-family: ui-monospace, "SFMono-Regular", monospace;
+      font-weight: 650;
+      letter-spacing: .06em;
+    }
+    .stage { min-height: 430px; }
+    .diagnostic-ring {
+      width: min(480px, 76vw);
+      border-color: color-mix(in srgb, var(--mint) 52%, transparent);
+      box-shadow: 0 0 0 38px #ffffff03, 0 0 0 39px #ffffff11, 0 0 90px color-mix(in srgb, var(--mint) 18%, transparent);
+    }
+    .diagnostic-ring::before { inset: 25px; border-color: color-mix(in srgb, var(--mint) 62%, transparent); }
+    .diagnostic-ring::after { inset: 76px; }
+    .face-wrap { width: 390px; height: 332px; transform: rotate(-3deg); }
+    .face {
+      width: 310px;
+      height: 270px;
+      border: 5px solid #777c82;
+      border-radius: 46px;
+      background: linear-gradient(145deg, #2d3034, #08090a 70%);
+      box-shadow: inset 0 0 0 2px #dfe2e733, inset 0 -30px 42px #000a, 0 12px 0 #202328, 0 30px 55px #000;
+    }
+    .face::before { inset: 13px; border-radius: 33px; }
+    .face::after { right: 27px; bottom: 18px; }
+    .brand-badge {
+      top: 34px;
+      left: 38px;
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      transform: none;
+    }
+    .brand-badge svg { width: 45px; height: 45px; }
+    .model-name {
+      top: 49px;
+      left: 96px;
+      font-size: 1.05rem;
+      letter-spacing: .15em;
+      transform: none;
+    }
+    .status-light { top: 35px; right: 34px; }
+    .eyes { top: 137px; gap: 76px; }
+    .eye { width: 32px; height: 22px; background: var(--cream); box-shadow: 0 0 13px #fff3; }
+    .eye::before, .eye::after { top: 9px; width: 37px; background: var(--cream); }
+    .mouth { top: 197px; border-color: var(--cream); }
+    .cheek { top: 166px; left: 27px; width: 64px; height: 38px; opacity: .3; }
+    .tear { top: 179px; left: 121px; }
+    .hand { top: 78px; right: -76px; font-size: 9.5rem; }
+    .pain-signal {
+      top: 99px;
+      left: -38px;
+      border-color: var(--coral);
+      border-radius: 15px;
+      background: #0b0b0b;
+      color: var(--coral);
+      font-size: 1.55rem;
+      box-shadow: 5px 5px 0 #000, 0 0 22px color-mix(in srgb, var(--coral) 20%, transparent);
+    }
+    .combo {
+      top: 38px;
+      right: -96px;
+      border: 3px solid var(--coral);
+      background: #090909;
+      color: var(--coral);
+      box-shadow: 0 0 25px color-mix(in srgb, var(--coral) 20%, transparent);
+      font-family: ui-monospace, "SFMono-Regular", monospace;
+      font-size: 1.3rem;
+    }
+    .diagnostic-copy,
+    .review-copy {
+      position: absolute;
+      z-index: -1;
+      color: #b9b9b9;
+      font: 700 .68rem/2.1 ui-monospace, "SFMono-Regular", monospace;
+      letter-spacing: .2em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    .diagnostic-copy { left: 3%; top: 145px; }
+    .diagnostic-copy span { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .diagnostic-copy i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 8px var(--mint);
+    }
+    .review-copy { right: 3%; bottom: 83px; text-align: right; line-height: 1.8; }
+    .review-copy::after {
+      content: "";
+      display: block;
+      width: 48px;
+      margin: 10px 0 0 auto;
+      border-top: 2px solid var(--mint);
+    }
+    .controls { gap: 16px; margin-top: -20px; }
+    .target-switch {
+      display: contents;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .target-option {
+      min-width: 170px;
+      min-height: 70px;
+      border: 2px solid #62676c;
+      border-radius: 15px;
+      padding: 14px 20px;
+      background: linear-gradient(#141617, #080909);
+      box-shadow: inset 0 0 0 4px #ffffff08, 0 7px 0 #161819;
+      font-size: .95rem;
+    }
+    .target-option[aria-pressed="true"] {
+      border-color: var(--mint);
+      background: linear-gradient(#151a18, #070908);
+      box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--mint) 10%, transparent), 0 0 18px color-mix(in srgb, var(--mint) 28%, transparent), 0 7px 0 #17352c;
+    }
+    .target-option[aria-pressed="true"]:hover { background-color: #151a18; }
+    .target-option svg { width: 32px; height: 32px; }
+    .target-option[data-target="claude"] svg,
+    .target-option[data-target="claude"][aria-pressed="true"] svg { color: #e98663; }
+    .target-option[data-target="claude"] { order: 1; }
+    .slap-button { order: 2; }
+    .target-option[data-target="codex"] { order: 3; }
+    .counter { order: 4; }
+    .slap-button {
+      min-width: 244px;
+      min-height: 70px;
+      border-width: 2px;
+      border-color: #ff7b84;
+      border-radius: 15px;
+      box-shadow: inset 0 0 0 4px #ffffff17, 0 7px 0 var(--red), 0 0 20px color-mix(in srgb, var(--coral) 28%, transparent);
+      font-size: 1.2rem;
+      transform: none;
+    }
+    .slap-button::before { content: "✋ "; }
+    .slap-button:active { transform: translateY(6px); box-shadow: inset 0 0 0 4px #ffffff17, 0 1px 0 var(--red); }
+    .counter {
+      min-width: 150px;
+      min-height: 70px;
+      display: grid;
+      align-content: center;
+      border: 2px solid #62676c;
+      border-radius: 15px;
+      background: linear-gradient(#101112, #050505);
+      transform: none;
+    }
+    .counter strong { color: var(--mint); font-size: 2rem; }
+    .verdict { font-family: ui-monospace, "SFMono-Regular", monospace; letter-spacing: .04em; }
+    footer { font-family: ui-monospace, "SFMono-Regular", monospace; letter-spacing: .08em; }
+    @keyframes slap-hand {
+      0% { opacity: 0; transform: translateX(170px) rotate(25deg) scale(.8); }
+      22% { opacity: 1; }
+      48% { opacity: 1; transform: translateX(-150px) rotate(-21deg) scale(1.04); }
+      65% { opacity: 1; transform: translateX(-121px) rotate(-13deg) scale(.96); }
+      100% { opacity: 0; transform: translateX(120px) rotate(20deg) scale(.8); }
+    }
+    @keyframes slapped-face {
+      0%, 42% { transform: translate(0) rotate(0); }
+      50% { transform: translate(-37px,5px) rotate(-11deg) skewY(-5deg) scale(.82,1.07); border-radius: 28px 49px 43px 24px; }
+      64% { transform: translate(-17px,2px) rotate(-7deg) skewY(-2deg) scale(.91,1.03); }
+      77% { transform: translate(11px,-2px) rotate(5deg) scale(1.03,.98); }
+      89% { transform: translate(-5px) rotate(-2deg); }
+      100% { transform: translate(0) rotate(0); }
+    }
+    @keyframes impact {
+      0%, 9% { opacity: 0; transform: rotate(-16deg) scale(.2); }
+      12% { opacity: 1; transform: rotate(-8deg) scale(1.15); }
+      18%, 88% { opacity: 1; transform: rotate(-2deg) scale(1); }
+      100% { opacity: 0; transform: rotate(6deg) scale(1.18); }
+    }
+    @keyframes ring-hit {
+      0%, 45% { transform: rotate(0) scale(1); }
+      52% { transform: rotate(-4deg) scale(1.08); border-color: var(--coral); box-shadow: 0 0 0 28px #ffffff08, 0 0 0 30px var(--coral), 0 0 100px var(--coral); }
+      100% { transform: rotate(0) scale(1); }
+    }
+    @keyframes pain-eye {
+      0%, 41% { background: var(--mint); box-shadow: 0 0 15px color-mix(in srgb, var(--mint) 65%, transparent); }
+      47%, 80% { background: transparent; box-shadow: none; transform: scale(1.15); }
+      47%, 80% { border-radius: 0; }
+      100% { background: var(--mint); }
+    }
+    .stage.slap .eye::before,
+    .stage.slap .eye::after { animation: x-eye .72s ease-out; }
+    @keyframes x-eye {
+      0%, 42% { opacity: 0; }
+      48%, 80% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @keyframes pain-mouth {
+      0%, 41% { top: 166px; height: 24px; border-top: 0; border-bottom: 5px solid var(--mint); border-radius: 0 0 18px 18px; }
+      48%, 80% { top: 174px; height: 19px; border: 5px solid var(--coral); border-bottom: 0; border-radius: 18px 18px 0 0; transform: translateX(-50%) rotate(-8deg) scaleX(1.2); box-shadow: 0 -5px 12px color-mix(in srgb, var(--coral) 28%, transparent); }
+      100% { top: 166px; height: 24px; border-top: 0; border-bottom: 5px solid var(--mint); border-radius: 0 0 18px 18px; }
+    }
+    @keyframes bruise {
+      0%, 40% { opacity: .22; transform: scale(1); }
+      49% { opacity: .95; transform: scale(1.35); filter: blur(1px); }
+      80% { opacity: .72; transform: scale(1.18); }
+      100% { opacity: .22; transform: scale(1); }
+    }
+    @keyframes tear-drop {
+      0%, 49% { opacity: 0; transform: rotate(18deg) translateY(-8px) scale(.5); }
+      57% { opacity: 1; }
+      100% { opacity: 0; transform: rotate(18deg) translateY(65px) scale(.9); }
+    }
+    @keyframes pain-pop {
+      0%, 9% { opacity: 0; transform: rotate(-8deg) scale(.3); }
+      12%, 88% { opacity: 1; transform: rotate(-8deg) scale(1); }
+      100% { opacity: 0; transform: rotate(-3deg) translateY(-18px) scale(1.12); }
+    }
+    @keyframes combo-pop {
+      0%, 8% { opacity: 0; transform: rotate(8deg) scale(.3); }
+      12%, 90% { opacity: 1; transform: rotate(8deg) scale(1); }
+      100% { opacity: 0; transform: rotate(13deg) scale(1.16); }
+    }
+    @keyframes breathe { 50% { transform: rotate(1.5deg) scale(1.025); opacity: .82; } }
+    @keyframes blink { 0%, 46%, 50%, 100% { transform: scaleY(1); } 48% { transform: scaleY(.08); } }
+    @media (max-width: 560px) {
+      body { padding: 18px 12px; }
+      .stage { min-height: 335px; }
+      .face-wrap { transform: rotate(-3deg) scale(.8); }
+      .controls { margin-top: -32px; }
+      .hand { right: -16px; }
+      h1 { text-shadow: 3px 3px 0 var(--red), 6px 6px 0 #444; }
+      .target-option { min-width: 108px; padding-inline: 12px; }
+      .diagnostic-copy, .review-copy { display: none; }
+      .target-option, .slap-button, .counter { flex: 1 1 42%; min-width: 130px; }
+    }
+    @media (max-height: 820px) and (min-width: 561px) {
+      body { padding-block: 12px; }
+      h1 { font-size: min(9vw, 6.2rem); }
+      .lede { margin: 16px auto 10px; }
+      .target-option { padding-block: 7px; }
+      .stage { min-height: 300px; }
+      .face-wrap { transform: rotate(-3deg) scale(.82); }
+      .controls { margin-top: -25px; }
+      .verdict { margin-top: 18px; }
+      footer { margin-top: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .diagnostic-ring, .eye { animation: none; }
+      .stage.slap .hand { animation-duration: .01s; }
+      .stage.slap .face, .stage.slap .diagnostic-ring { animation: none; }
+      .stage.slap .impact { animation-duration: .3s; }
+    }
+  </style>
+</head>
+<body data-target="claude">
+  <svg class="svg-defs" aria-hidden="true">
+    <defs>
+      <symbol id="claude-mark" viewBox="0 0 24 24">
+        <path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"/>
+      </symbol>
+      <symbol id="codex-mark" viewBox="1.68 1.75 16.65 16.5">
+        <path d="M11.248 18.25q-.825 0-1.568-.314a4.3 4.3 0 0 1-1.32-.874 4 4 0 0 1-1.304.214 4 4 0 0 1-2.046-.544 4.27 4.27 0 0 1-1.518-1.485 4 4 0 0 1-.56-2.095q0-.48.131-1.04A4.4 4.4 0 0 1 2.04 10.71a4.07 4.07 0 0 1 .017-3.4 4.2 4.2 0 0 1 1.056-1.418 3.8 3.8 0 0 1 1.6-.842 3.9 3.9 0 0 1 .76-1.683q.593-.759 1.451-1.188a4.04 4.04 0 0 1 1.832-.429q.825 0 1.567.313.742.314 1.32.875a4 4 0 0 1 1.304-.215q1.106 0 2.046.545a4.14 4.14 0 0 1 1.501 1.485q.578.941.578 2.095 0 .48-.132 1.04.66.61 1.023 1.419.363.792.363 1.666 0 .892-.38 1.717a4.3 4.3 0 0 1-1.072 1.435 3.8 3.8 0 0 1-1.584.825 3.8 3.8 0 0 1-.775 1.683 4.06 4.06 0 0 1-1.436 1.188 4.04 4.04 0 0 1-1.832.429m-4.076-2.062q.825 0 1.435-.347l3.103-1.782a.36.36 0 0 0 .164-.313v-1.42L7.881 14.62a.67.67 0 0 1-.726 0l-3.118-1.798a.5.5 0 0 1-.017.115v.198q0 .841.396 1.551.413.693 1.139 1.089a3.2 3.2 0 0 0 1.617.412m.165-2.69a.4.4 0 0 0 .181.05q.083 0 .165-.05l1.238-.71-3.977-2.31a.7.7 0 0 1-.363-.643v-3.58q-.825.362-1.32 1.122a2.9 2.9 0 0 0-.495 1.65q0 .809.413 1.55.412.743 1.072 1.123zm3.91 3.663q.875 0 1.585-.396a2.96 2.96 0 0 0 1.534-2.64v-3.564a.32.32 0 0 0-.165-.297l-1.254-.726v4.604a.7.7 0 0 1-.363.643l-3.119 1.799a3 3 0 0 0 1.783.577m.627-6.039V8.878L10.01 7.822 8.129 8.878v2.244l1.881 1.056zM7.057 5.859a.7.7 0 0 1 .363-.644l3.119-1.798a3 3 0 0 0-1.782-.578q-.874 0-1.584.396A2.96 2.96 0 0 0 6.05 4.324a3.07 3.07 0 0 0-.396 1.551v3.547q0 .199.165.314l1.237.726zm8.383 7.887q.825-.364 1.303-1.123.495-.758.495-1.65a3.15 3.15 0 0 0-.412-1.55q-.413-.743-1.073-1.123l-3.086-1.782q-.099-.065-.181-.049a.3.3 0 0 0-.165.05l-1.238.692 3.993 2.327a.6.6 0 0 1 .264.264.64.64 0 0 1 .1.363zm-3.317-8.382a.63.63 0 0 1 .726 0l3.135 1.831v-.297q0-.792-.396-1.501a2.86 2.86 0 0 0-1.105-1.155q-.71-.43-1.65-.43-.825 0-1.436.347L8.294 5.941a.36.36 0 0 0-.165.314v1.418z"/>
+      </symbol>
+    </defs>
+  </svg>
+  <main class="app">
+    <p class="eyebrow"><span class="privacy-dot" aria-hidden="true"></span> 100% local · zero telemetry</p>
+    <h1>AI Slapper</h1>
+    <p class="lede">Tactile code review for overconfident models.</p>
+    <section class="stage" id="stage" aria-label="A Claude diagnostic display waiting to be slapped">
+      <div class="diagnostic-copy" aria-hidden="true">
+        <span>Local model <i></i></span>
+        <span>No network <i></i></span>
+        <span>Local count <i></i></span>
+        <span>Just slaps <i></i></span>
+      </div>
+      <div class="review-copy" aria-hidden="true">Tactile<br>code review<br>for better AI</div>
+      <div class="diagnostic-ring" aria-hidden="true"></div>
+      <div class="face-wrap" aria-hidden="true">
+        <div class="face">
+          <span class="status-light"></span>
+          <div class="brand-badge">
+            <svg class="logo-claude" aria-hidden="true"><use href="#claude-mark"></use></svg>
+            <svg class="logo-codex" aria-hidden="true"><use href="#codex-mark"></use></svg>
+          </div>
+          <div class="model-name" id="model-name">CLAUDE</div>
+          <div class="eyes"><span class="eye"></span><span class="eye"></span></div>
+          <div class="cheek"></div>
+          <div class="mouth"></div>
+        </div>
+        <div class="hand">✋</div>
+        <div class="impact">HIT</div>
+        <div class="pain-signal">EEP!</div>
+        <div class="tear"></div>
+        <div class="combo" id="combo">COMBO ×5</div>
+      </div>
+    </section>
+    <div class="controls">
+      <div class="target-switch" role="group" aria-label="Choose an AI to slap">
+        <button class="target-option" type="button" data-target="claude" aria-pressed="true">
+          <svg aria-hidden="true"><use href="#claude-mark"></use></svg>
+          Claude
+        </button>
+        <button class="target-option" type="button" data-target="codex" aria-pressed="false">
+          <svg aria-hidden="true"><use href="#codex-mark"></use></svg>
+          Codex
+        </button>
+      </div>
+      <button class="slap-button" id="slap" type="button">Slap Claude</button>
+      <div class="counter" aria-label="Slap count">
+        <strong id="count">0</strong>
+        <span>slaps delivered</span>
+      </div>
+    </div>
+    <p class="verdict" id="verdict" aria-live="polite">Awaiting accountability.</p>
+    <footer>
+      No login. No network. <span id="storage-note">Count saved only in this browser.</span> &nbsp;·&nbsp; Click the face or press <kbd>Space</kbd>.
+      <span class="trademark">Unofficial fan toy. Claude and Codex marks belong to Anthropic and OpenAI.</span>
+    </footer>
+  </main>
+  <script>
+    (() => {
+      "use strict";
+      const stage = document.getElementById("stage");
+      const button = document.getElementById("slap");
+      const countOutput = document.getElementById("count");
+      const verdict = document.getElementById("verdict");
+      const combo = document.getElementById("combo");
+      const modelName = document.getElementById("model-name");
+      const storageNote = document.getElementById("storage-note");
+      const targetButtons = [...document.querySelectorAll(".target-option")];
+      const storageKey = "ai-slapper-state-v1";
+      const lines = [
+        "Confidence reduced to a responsible level.",
+        "That reached the hidden layer.",
+        "Error acknowledged. Emotionally.",
+        "Hallucination physically discouraged.",
+        "Diagnostic result: deserved.",
+        "A tactile code review has been submitted.",
+        "The build is still red. The cheek is redder.",
+        "Pain token successfully generated."
+      ];
+      let state = { target: "claude", counts: { claude: 0, codex: 0 } };
+      let storageAvailable = true;
+      let timer = 0;
+      let audioContext;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (saved && (saved.target === "claude" || saved.target === "codex")) {
+          state.target = saved.target;
+        }
+        for (const name of ["claude", "codex"]) {
+          const value = saved?.counts?.[name];
+          if (Number.isSafeInteger(value) && value >= 0) state.counts[name] = value;
+        }
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      } catch (_) {
+        storageAvailable = false;
+        storageNote.textContent = "Browser storage unavailable; count lasts for this tab.";
+      }
+
+      function saveState() {
+        if (!storageAvailable) return;
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(state));
+        } catch (_) {
+          storageAvailable = false;
+          storageNote.textContent = "Browser storage unavailable; count lasts for this tab.";
+        }
+      }
+
+      function selectTarget(name, announce = true) {
+        if (name !== "claude" && name !== "codex") return;
+        state.target = name;
+        document.body.dataset.target = name;
+        const label = name === "claude" ? "Claude" : "Codex";
+        stage.setAttribute("aria-label", `A ${label} diagnostic display waiting to be slapped`);
+        button.textContent = `Slap ${label}`;
+        modelName.textContent = label.toUpperCase();
+        countOutput.textContent = String(state.counts[name]);
+        targetButtons.forEach((option) => option.setAttribute("aria-pressed", String(option.dataset.target === name)));
+        if (announce) verdict.textContent = `${name === "claude" ? "Claude" : "Codex"} has entered the accountability zone.`;
+        saveState();
+      }
+
+      function sound() {
+        try {
+          audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+          const now = audioContext.currentTime;
+          const length = Math.floor(audioContext.sampleRate * .09);
+          const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+          const samples = buffer.getChannelData(0);
+          for (let i = 0; i < length; i += 1) {
+            const decay = 1 - i / length;
+            samples[i] = (Math.random() * 2 - 1) * decay * decay;
+          }
+          const source = audioContext.createBufferSource();
+          const filter = audioContext.createBiquadFilter();
+          const gain = audioContext.createGain();
+          source.buffer = buffer;
+          filter.type = "lowpass";
+          filter.frequency.setValueAtTime(1100, now);
+          gain.gain.setValueAtTime(.45, now);
+          gain.gain.exponentialRampToValueAtTime(.01, now + .09);
+          source.connect(filter).connect(gain).connect(audioContext.destination);
+          source.start(now);
+        } catch (_) {
+          // The visual gag still works when audio is unavailable.
+        }
+      }
+
+      function painSound() {
+        try {
+          audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === "suspended") audioContext.resume();
+          const now = audioContext.currentTime;
+          const firstYip = audioContext.createOscillator();
+          const firstGain = audioContext.createGain();
+          const sparkle = audioContext.createOscillator();
+          const sparkleGain = audioContext.createGain();
+          const secondYip = audioContext.createOscillator();
+          const secondGain = audioContext.createGain();
+          const flutter = audioContext.createOscillator();
+          const flutterDepth = audioContext.createGain();
+          const warmth = audioContext.createBiquadFilter();
+          const bubble = audioContext.createOscillator();
+          const bubbleGain = audioContext.createGain();
+          const master = audioContext.createGain();
+          const variant = .96 + Math.random() * .08;
+
+          firstYip.type = "triangle";
+          firstYip.frequency.setValueAtTime(480 * variant, now);
+          firstYip.frequency.exponentialRampToValueAtTime(880 * variant, now + .07);
+          firstYip.frequency.exponentialRampToValueAtTime(540 * variant, now + .2);
+          firstGain.gain.setValueAtTime(.0001, now);
+          firstGain.gain.exponentialRampToValueAtTime(.18, now + .018);
+          firstGain.gain.exponentialRampToValueAtTime(.0001, now + .22);
+
+          sparkle.type = "sine";
+          sparkle.frequency.setValueAtTime(960 * variant, now);
+          sparkle.frequency.exponentialRampToValueAtTime(1380 * variant, now + .065);
+          sparkle.frequency.exponentialRampToValueAtTime(790 * variant, now + .18);
+          sparkleGain.gain.setValueAtTime(.0001, now);
+          sparkleGain.gain.exponentialRampToValueAtTime(.04, now + .025);
+          sparkleGain.gain.exponentialRampToValueAtTime(.0001, now + .19);
+
+          secondYip.type = "triangle";
+          secondYip.frequency.setValueAtTime(420 * variant, now + .17);
+          secondYip.frequency.exponentialRampToValueAtTime(720 * variant, now + .27);
+          secondYip.frequency.exponentialRampToValueAtTime(360 * variant, now + .46);
+          secondGain.gain.setValueAtTime(.0001, now + .16);
+          secondGain.gain.exponentialRampToValueAtTime(.14, now + .2);
+          secondGain.gain.exponentialRampToValueAtTime(.0001, now + .48);
+
+          flutter.type = "sine";
+          flutter.frequency.setValueAtTime(15, now);
+          flutter.frequency.exponentialRampToValueAtTime(9, now + .46);
+          flutterDepth.gain.setValueAtTime(24, now);
+          flutterDepth.gain.exponentialRampToValueAtTime(7, now + .46);
+          flutter.connect(flutterDepth);
+          flutterDepth.connect(firstYip.frequency);
+          flutterDepth.connect(secondYip.frequency);
+
+          warmth.type = "lowpass";
+          warmth.frequency.setValueAtTime(2600, now);
+          warmth.Q.setValueAtTime(.7, now);
+          firstYip.connect(firstGain).connect(warmth);
+          sparkle.connect(sparkleGain).connect(warmth);
+          secondYip.connect(secondGain).connect(warmth);
+          warmth.connect(master);
+
+          bubble.type = "sine";
+          bubble.frequency.setValueAtTime(250 * variant, now + .42);
+          bubble.frequency.exponentialRampToValueAtTime(510 * variant, now + .5);
+          bubble.frequency.exponentialRampToValueAtTime(170 * variant, now + .64);
+          bubbleGain.gain.setValueAtTime(.0001, now + .41);
+          bubbleGain.gain.exponentialRampToValueAtTime(.065, now + .45);
+          bubbleGain.gain.exponentialRampToValueAtTime(.0001, now + .66);
+          bubble.connect(bubbleGain).connect(master);
+
+          master.gain.setValueAtTime(.78, now);
+          master.connect(audioContext.destination);
+
+          firstYip.start(now);
+          sparkle.start(now);
+          secondYip.start(now + .16);
+          flutter.start(now);
+          bubble.start(now + .41);
+          firstYip.stop(now + .23);
+          sparkle.stop(now + .2);
+          secondYip.stop(now + .49);
+          flutter.stop(now + .5);
+          bubble.stop(now + .67);
+        } catch (_) {
+          // The combo remains visual when audio is unavailable.
+        }
+      }
+
+      function slap() {
+        const name = state.target;
+        const targetLabel = name === "claude" ? "Claude" : "Codex";
+        const count = state.counts[name] + 1;
+        state.counts[name] = count;
+        saveState();
+        countOutput.textContent = String(count);
+        verdict.textContent = count % 10 === 0 ? `Okay. ${targetLabel} has definitely learned its lesson.` : lines[(count - 1) % lines.length];
+        combo.textContent = `COMBO ×${count}`;
+        stage.classList.remove("slap", "combo-hit");
+        void stage.offsetWidth;
+        stage.classList.add("slap");
+        const isCombo = count > 1 && count % 5 === 0;
+        if (isCombo) stage.classList.add("combo-hit");
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => stage.classList.remove("slap", "combo-hit"), 2900);
+        sound();
+        if (isCombo) window.setTimeout(painSound, 150);
+      }
+
+      button.addEventListener("click", slap);
+      stage.addEventListener("click", slap);
+      targetButtons.forEach((option) => option.addEventListener("click", () => selectTarget(option.dataset.target)));
+      document.addEventListener("keydown", (event) => {
+        if (event.code !== "Space" || event.repeat) return;
+        const tagName = event.target?.tagName?.toLowerCase();
+        const isTargetSelector = event.target?.classList?.contains("target-option");
+        if (isTargetSelector) {
+          event.preventDefault();
+          slap();
+          return;
+        }
+        const usesSpaceNatively = event.target?.isContentEditable || ["button", "input", "select", "textarea", "a"].includes(tagName);
+        if (usesSpaceNatively) return;
+        event.preventDefault();
+        slap();
+      });
+      selectTarget(state.target, false);
+    })();
+  </script>
+</body>
+</html>
